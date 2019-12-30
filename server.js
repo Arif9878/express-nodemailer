@@ -26,7 +26,7 @@ function sendEmail(req, emailUser, data){
       // should be replaced with real recipient's account
       to: emailUser,
       subject: 'Informasi jadwal APBD',
-      html: `<p>Tahapan RAPBD - Rancangan Penetapan APBD berlangsung dan berakhir tanggal ${dateEnd[0]} pukul ${dateEnd[1]}:00 WIB.</p>`
+      html: `<p>Tahapan ${data.namatahap} - ${data.namasubtahap} berlangsung dan berakhir tanggal ${dateEnd[0]} pukul ${dateEnd[1]}:00 WIB.</p>`
   };
   transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
@@ -44,17 +44,15 @@ app.get('/send-email', function(req, res) {
     })
     .then((json) => {
       const lastIndex = json.data.length - 1
-      sendEmail(req, 'arifboyz16@gmail.com', json.data[lastIndex])
+      const detailNotif = json.data[lastIndex]
+      let listEmail = process.env.LIST_EMAIL.split(',')
+      for (let i = 0; i < listEmail.length;i++) {
+        sendEmail(req, listEmail[i], detailNotif)
+      }
       res.json({'status':'success'})
     });
 
 })
-
-
-app.post('/send-email', function (req, res) {
-
-  res.end();
-});
 
 let server = app.listen(8081, function(){
     let port = server.address().port;
