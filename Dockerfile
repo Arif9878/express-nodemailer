@@ -12,5 +12,3 @@ FROM arf95/npm-alpine:latest
 WORKDIR /usr/src/app
 
 COPY --from=build /usr/src/app .
-
-CMD [ "npm", "start" ]

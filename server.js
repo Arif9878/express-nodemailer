@@ -4,6 +4,7 @@ let express = require("express"),
   bodyParser = require('body-parser');
   fetch = require('node-fetch');
   moment = require('moment');
+  cron = require("node-cron");
 require('dotenv').config()
 let app = express();
 
@@ -36,25 +37,42 @@ function sendEmail(req, emailUser, data){
   });
 }
 
-app.get('/send-email', function(req, res) {
+function checkDetilJadwal(data) {
+  if (data.setstatus === "Aktif"){
+    const dateNow = new Date("01/01/2020")
+    const dateStart = data.waktumulai.split(" ")
+    const dateEnd = data.waktuselesai.split(" ")
+    const dateStartMomentObject = moment(dateStart[0] +" "+dateStart[1], "DD/MM/YYYY")
+    const dateEndMomentObject = moment(dateEnd[0] +" "+dateEnd[1], "DD/MM/YYYY")
+    const dateStartObject = dateStartMomentObject.toDate();
+    const dateEndObject = dateEndMomentObject.toDate();
+    if ((dateStartObject <= dateNow) && (dateEndObject >= dateNow)) {
+      return true
+    }
+    return false
+  }
+}
+
+cron.schedule("*/59 * * * *", function(req) {
+  // console.log("running a task every 1 hours");
   let response
   fetch('http://167.71.217.150/main/jadwal/2020/detil-jadwal/8/0')
     .then((res) => {
        return res.json()
     })
-    .then((json) => {
+    .then(async (json) => {
       const lastIndex = json.data.length - 1
       const detailNotif = json.data[lastIndex]
-      let listEmail = process.env.LIST_EMAIL.split(',')
-      for (let i = 0; i < listEmail.length;i++) {
-        sendEmail(req, listEmail[i], detailNotif)
+      if (detailNotif !== undefined) {
+        const response = await checkDetilJadwal(detailNotif)
+        if (response){
+          let listEmail = process.env.LIST_EMAIL.split(',')
+          for (let i = 0; i < listEmail.length;i++) {
+            sendEmail(req, listEmail[i], detailNotif)
+          }
+        }
       }
-      res.json({'status':'success'})
     });
-
-})
-
-let server = app.listen(8081, function(){
-    let port = server.address().port;
-    console.log("Server started at http://localhost:%s", port);
 });
+
+app.listen("3128");
